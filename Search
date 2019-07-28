@@ -32,16 +32,40 @@ export default {
       movieList:[]
     }
   },
+  methods:{
+     cancelRequest() {
+          if (typeof this.source === 'function') {
+             this.source('终止请求!')
+      }
+   }
+  },
   watch:{
     message(e){
-      
-      this.axios.get("/api/searchList?cityId=10&kw="+e).then(res=>{
-        console.log(res.data.data.movies.list)
-        var movies=res.data.data.movies.list;
-        var msg=res.data.msg
-        if( msg && movies){
-          this.movieList=movies;
-        }
+      this.cancelRequest();
+      var that=this;
+      this.axios.get("/api/searchList?cityId=10&kw="+e,
+        {
+          cancelToken:new this.axios.CancelToken(function executor(c){
+            that.source=c
+            })
+        }).then(res=>{
+          console.log(res.data.data.movies.list)
+          var movies=res.data.data.movies.list;
+          var msg=res.data.msg
+          if( msg && movies){
+            this.movieList=movies;
+          }
+        }).catch(err => {
+         if (err) {
+            if (this.axios.isCancel(err)) {
+               // 终止多次请求 请求取消 返回取消后的信息
+               console.log('请求取消', err.message)
+            } else {
+               // 服务端数据异常
+               console.log('没有搜索到数据哦')
+               this.list = []
+            }
+         }
       })
     }
   }
