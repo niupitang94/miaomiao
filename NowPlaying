@@ -1,8 +1,9 @@
 <template>
-  <div class="movie_body">
+  <div class="movie_body" ref="movie_body">
     <ul>
+      <li class="pullDown">{{pullDown}}</li>
       <li v-for="item of movieList" :key="item.id">
-        <div class="pic_show"><img :src="item.img |setWH('128.180')"></div>
+        <div class="pic_show" @tap="handleToDetails"><img :src="item.img |setWH('128.180')"></div>
         <div class="info_list">
           <h2>{{item.nm}}<img v-if="item.version" src="@/assets/maxs.png"> </h2>
           <p>观众评 <span class="grade">{{item.sc}}</span></p>
@@ -17,11 +18,19 @@
   </div>
 </template>
 <script>
+import BScroll from 'better-scroll';
+import { setTimeout } from 'timers';
 export default {
   name:"nowPlaying",
   data(){
     return {
-      movieList:[]
+      movieList:[],
+      pullDown:''
+    }
+  },
+  methods:{
+    handleToDetails(){
+      console.log(111);
     }
   },
   created(){
@@ -31,9 +40,36 @@ export default {
         var movieList=res.data.data.movieList;
       console.log(movieList);
       this.movieList=movieList;
-      }
-      
-
+      } 
+    })
+  },
+  mounted(){
+    this.$nextTick(()=>{
+     var scroll= new BScroll(this.$refs.movie_body,{
+        tap:true,
+        probeType:1
+      });
+      scroll.on('scroll',(pos)=>{
+        if(pos.y>30){
+          this.pullDown="正在更新中"
+        }
+      });
+      scroll.on('touchEnd',(pos)=>{
+        if(pos.y>30){
+          this.axios.get("/api/movieOnInfoList?cityId=10")
+          .then(res=>{
+            var msg=res.data.msg;
+            if(msg==="ok"){
+              this.pullDown="数据更新成功";
+              setTimeout(()=>{
+                var movieList=res.data.data.movieList;
+                this.movieList=movieList;
+                this.pullDown="";
+              },1000);   
+            } 
+          });
+        }//if结束
+      })
     })
   }
 }
@@ -51,5 +87,6 @@ export default {
 .movie_body .info_list img{ width:50px; position: absolute; right:10px; top: 5px;}
 .movie_body .btn_mall , .movie_body .btn_pre{ width:47px; height:27px; line-height: 28px; text-align: center; background-color: #f03d37; color: #fff; border-radius: 4px; font-size: 12px; cursor: pointer;}
 .movie_body .btn_pre{ background-color: #3c9fe6;}
+.movie_body .pullDown{margin:0;padding:0;border:none}
 </style>
 
